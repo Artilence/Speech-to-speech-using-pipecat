@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Voice Assistant</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>🎙️ OpenAI Voice Assistant</h2>
+        
+        <div id="status" style="display: none;"></div>
+        <div id="error" style="display: none;"></div>
+        <div class="recording-indicator" id="recordingIndicator">🔴 RECORDING - Speak now...</div>
+        
+        <div id="messages"></div>
+        
+        <div style="margin-bottom: 15px;">
+            <strong>Voice Chunks:</strong>
+            <div id="voiceChunks"></div>
+        </div>
+        
+        <div id="transcript"></div>
+        
+        <div class="controls">
+            <button id="startBtn" type="button">🎤 Start Recording</button>
+            <button id="stopBtn" type="button" disabled>🛑 Stop Recording</button>
+            <input id="input" type="text" placeholder="Or type a message..." />
+            <button id="sendBtn" type="button">Send</button>
+        </div>
+        
+        <audio id="audioPlayer" preload="auto"></audio>
+    </div>
+
+    <!-- Load modular JavaScript -->
+    <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

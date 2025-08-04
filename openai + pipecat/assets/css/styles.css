@@ -1,0 +1,260 @@
+/* OpenAI + Pipecat Voice Assistant Styles */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+    background-color: #f5f5f5;
+    margin: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#messages {
+    border: 2px solid #e0e0e0;
+    padding: 15px;
+    height: 300px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    background-color: #fafafa;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+#voiceChunks {
+    border: 2px solid #e3f2fd;
+    padding: 15px;
+    height: 100px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    background-color: #f8fbff;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #1976d2;
+}
+
+#transcript {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #fff3e0;
+    border-radius: 5px;
+    border: 1px solid #ffcc02;
+}
+
+#error {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #ffcdd2;
+}
+
+#status {
+    color: #2e7d32;
+    background-color: #e8f5e8;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #c8e6c9;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+#startBtn {
+    background-color: #4caf50;
+    color: white;
+}
+
+#startBtn:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+#stopBtn {
+    background-color: #f44336;
+    color: white;
+}
+
+#stopBtn:hover:not(:disabled) {
+    background-color: #da190b;
+}
+
+#sendBtn {
+    background-color: #2196f3;
+    color: white;
+}
+
+#sendBtn:hover:not(:disabled) {
+    background-color: #1976d2;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+#input:focus {
+    outline: none;
+    border-color: #2196f3;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.bot-message {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.user-message {
+    background-color: #f3e5f5;
+    border-left: 4px solid #9c27b0;
+}
+
+.info-message {
+    background-color: #fff3e0;
+    border-left: 4px solid #ff9800;
+}
+
+.voice-chunk {
+    background-color: #e8f5e8;
+    border-left: 4px solid #4caf50;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.recording-indicator {
+    display: none;
+    background-color: #ffebee;
+    color: #d32f2f;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #ffcdd2;
+    text-align: center;
+    font-weight: bold;
+}
+
+.recording-indicator.active {
+    display: block;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Loading animation */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: "...";
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: ""; }
+    40% { content: "."; }
+    60% { content: ".."; }
+    80%, 100% { content: "..."; }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+        margin: 10px;
+    }
+    
+    .controls {
+        flex-direction: column;
+    }
+    
+    #input {
+        margin-bottom: 10px;
+    }
+    
+    #messages {
+        height: 250px;
+    }
+    
+    #voiceChunks {
+        height: 80px;
+    }
+    
+    h2 {
+        font-size: 1.5em;
+    }
+}
+
+/* Connection status indicator */
+.connection-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    z-index: 1000;
+}
+
+.connection-status.connected {
+    background-color: #4caf50;
+}
+
+.connection-status.disconnected {
+    background-color: #f44336;
+}
+
+.connection-status.reconnecting {
+    background-color: #ff9800;
+}

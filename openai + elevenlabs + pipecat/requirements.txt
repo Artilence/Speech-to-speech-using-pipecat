@@ -1,0 +1,13 @@
+# Voice Conversation Agent Requirements
+# Core web framework and server
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+
+# WebSocket support
+websockets>=11.0
+
+# AI and API clients
+openai>=1.0.0
+
+# Environment and configuration
+python-dotenv>=1.0.0

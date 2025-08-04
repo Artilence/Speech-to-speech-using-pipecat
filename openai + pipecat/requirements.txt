@@ -1,0 +1,35 @@
+# OpenAI + Pipecat Voice Assistant Requirements
+
+# Core web framework and server
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+
+# OpenAI integration
+openai>=1.0.0
+
+# Pipecat framework for real-time AI applications
+pipecat-ai>=0.0.1
+
+# Text-to-speech
+gTTS>=2.3.0
+
+# Environment configuration
+python-dotenv>=1.0.0
+
+# Data validation
+pydantic>=2.0.0
+
+# Logging
+loguru>=0.7.0
+
+# CORS middleware (included with FastAPI, but explicit for clarity)
+starlette>=0.30.0
+
+# WebSocket support (included with FastAPI)
+websockets>=11.0
+
+# Development dependencies (optional)
+# pytest>=7.0.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.0.0

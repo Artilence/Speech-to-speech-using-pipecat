@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Conversation Agent</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Voice Conversation Agent</h1>
+        
+        <div id="status" class="status disconnected">
+            Connecting to server...
+        </div>
+
+        <div class="voice-controls">
+            <button id="micButton" class="mic-button" disabled>
+                🎤
+            </button>
+            <p style="margin-top: 15px; color: #666;">Click to speak</p>
+        </div>
+
+        <div id="transcript" class="transcript">
+            Ready to listen...
+        </div>
+
+        <div id="audioVisualizer" class="audio-visualizer" style="display: none;">
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+        </div>
+
+        <div id="latencyDisplay" class="latency-display">
+            <h3>📊 Real-time Latency Monitoring</h3>
+            <div class="latency-grid">
+                <div class="latency-item">
+                    <span class="latency-label">🧠 OpenAI API:</span>
+                    <span id="openaiLatency" class="latency-value">-</span>
+                </div>
+                <div class="latency-item">
+                    <span class="latency-label">🔗 WebSocket Connect:</span>
+                    <span id="websocketLatency" class="latency-value">-</span>
+                </div>
+                <div class="latency-item">
+                    <span class="latency-label">🎵 First Audio Chunk:</span>
+                    <span id="firstChunkLatency" class="latency-value">-</span>
+                </div>
+                <div class="latency-item">
+                    <span class="latency-label">⚡ Total Round-trip:</span>
+                    <span id="totalLatency" class="latency-value total">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="clearBtn" class="control-btn">Clear Conversation</button>
+            <button id="muteBtn" class="control-btn">Mute Audio</button>
+        </div>
+
+        <div id="conversation" class="conversation">
+            <div class="message ai-message">
+                👋 Hi! I'm your voice assistant. Click the microphone button and start speaking!
+            </div>
+        </div>
+    </div>
+
+    <audio id="responseAudio" preload="auto"></audio>
+
+    <!-- Load modular JavaScript -->
+    <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

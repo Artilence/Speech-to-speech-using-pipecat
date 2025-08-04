@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Voice Chat with AI</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <h1>🎙️ Streaming Voice Chat</h1>
+            <div class="status" id="status">Connecting...</div>
+            <div class="connection-indicator" id="connectionIndicator"></div>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="welcome-message">
+                <h3>📞 Voice Call with AI</h3>
+                <p>Click the button below to start a real-time voice conversation with AI.</p>
+                <p>Your conversation history will appear here.</p>
+            </div>
+        </div>
+
+        <div class="call-controls">
+            <button class="call-button inactive" id="callButton">
+                📞 Start Call
+            </button>
+            
+            <div class="call-status" id="callStatus">Ready to call</div>
+        </div>
+    </div>
+
+    <script src="js/voice-chat.js"></script>
+</body>
+</html>
