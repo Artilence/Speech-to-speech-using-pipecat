@@ -4,27 +4,60 @@ A comprehensive collection of speech-to-speech AI implementations using various 
 
 ## 🎯 Project Overview
 
-This repository contains **5 different implementations** of speech-to-speech AI assistants, each using different combinations of technologies to achieve varying levels of performance, latency, and functionality:
+This repository contains **6 different implementations** of speech-to-speech AI assistants, each using different combinations of technologies to achieve varying levels of performance, latency, and functionality:
 
-1. **OpenAI Basic** - Simple implementation with OpenAI + gTTS
-2. **OpenAI + Pipecat** - Enhanced with Pipecat framework integration
-3. **OpenAI + ElevenLabs + Pipecat** - Professional TTS with ultra-low latency optimization
-4. **OpenAI + ElevenLabs + Pipecat + Streaming** - Full streaming architecture
-5. **OpenAI + Pipecat + Streaming** - Modular streaming without ElevenLabs
+1. **Groq + Browser TTS** - ⭐ **RECOMMENDED** - Ultra-fast LLM with free browser TTS
+2. **OpenAI Basic** - Simple implementation with OpenAI + gTTS
+3. **OpenAI + Pipecat** - Enhanced with Pipecat framework integration
+4. **OpenAI + ElevenLabs + Pipecat** - Professional TTS with ultra-low latency optimization
+5. **OpenAI + ElevenLabs + Pipecat + Streaming** - Full streaming architecture
+6. **OpenAI + Pipecat + Streaming** - Modular streaming without ElevenLabs
 
 ## 📊 Performance Comparison
 
-| Implementation | Latency (Total) | TTS Quality | Real-time Streaming | Complexity |
-|----------------|-----------------|-------------|-------------------|------------|
-| OpenAI Basic | ~2-5 seconds | Basic (gTTS) | ❌ | Low |
-| OpenAI + Pipecat | ~1-3 seconds | Basic (gTTS) | ⚠️ Partial | Medium |
-| OpenAI + ElevenLabs + Pipecat | **~750-1500ms** | Excellent | ✅ Full | High |
-| OpenAI + ElevenLabs + Pipecat + Streaming | **~500-1000ms** | Excellent | ✅ Full | Very High |
-| OpenAI + Pipecat + Streaming | ~500ms-1s | Basic (gTTS) | ✅ Full | High |
+| Implementation | Latency (Total) | TTS Quality | Real-time Streaming | Cost | Complexity |
+|----------------|-----------------|-------------|-------------------|------|------------|
+| **⭐ Groq + Browser TTS** | **~100-400ms** | **Excellent (Native)** | ✅ **Full** | **Free** | **Medium** |
+| OpenAI Basic | ~2-5 seconds | Basic (gTTS) | ❌ | Low | Low |
+| OpenAI + Pipecat | ~1-3 seconds | Basic (gTTS) | ⚠️ Partial | Low | Medium |
+| OpenAI + ElevenLabs + Pipecat | ~750-1500ms | Excellent | ✅ Full | High | High |
+| OpenAI + ElevenLabs + Pipecat + Streaming | ~500-1000ms | Excellent | ✅ Full | High | Very High |
+| OpenAI + Pipecat + Streaming | ~500ms-1s | Basic (gTTS) | ✅ Full | Low | High |
 
 ## 🏗️ Architecture Breakdown
 
-### 1. OpenAI Basic (`openai/`)
+### ⭐ 1. Groq + Browser TTS (`groq/`) - **RECOMMENDED**
+**Technologies**: FastAPI + Groq LLM + Browser Web Speech API + WebSocket
+
+- **Purpose**: Ultra-fast, cost-effective production-ready implementation
+- **LLM**: Groq (llama-3.3-70b-versatile) - Lightning-fast inference
+- **TTS**: Browser Web Speech API (Native, high-quality, free)
+- **Latency**: **~100-400ms** (fastest overall performance)
+- **Features**:
+  - Groq's ultra-fast LLM inference (~50-150ms)
+  - Native browser TTS (excellent quality, zero cost)
+  - Modular service architecture
+  - Real-time latency monitoring
+  - Comprehensive session management
+  - Professional WebSocket streaming
+- **Use Case**: **Best choice for most applications** - production-ready, cost-effective, high performance
+
+```bash
+# Key advantages
+- Model: llama-3.3-70b-versatile (ultra-fast Groq inference)
+- TTS: Browser Web Speech API (free, high-quality)
+- Architecture: Clean modular design with services
+- Monitoring: Built-in comprehensive latency tracking
+- Cost: Extremely low (only Groq API costs, no TTS fees)
+```
+
+**Performance Breakdown**:
+- Groq LLM: ~50-150ms (3-5x faster than OpenAI)
+- Browser TTS: ~50-100ms (instant local processing)
+- WebSocket: ~10-50ms
+- Total Round-trip: ~100-400ms
+
+### 2. OpenAI Basic (`openai/`)
 **Technologies**: FastAPI + OpenAI + gTTS + WebSocket
 
 - **Purpose**: Simple baseline implementation
@@ -40,7 +73,7 @@ This repository contains **5 different implementations** of speech-to-speech AI 
 - uvicorn[standard]>=0.20.0
 ```
 
-### 2. OpenAI + Pipecat (`openai + pipecat/`)
+### 3. OpenAI + Pipecat (`openai + pipecat/`)
 **Technologies**: FastAPI + OpenAI + Pipecat + gTTS + WebSocket
 
 - **Purpose**: Introduction to Pipecat framework
@@ -57,7 +90,7 @@ This repository contains **5 different implementations** of speech-to-speech AI 
 - fastapi>=0.100.0
 ```
 
-### 3. OpenAI + ElevenLabs + Pipecat (`openai + elevenlabs + pipecat/`)
+### 4. OpenAI + ElevenLabs + Pipecat (`openai + elevenlabs + pipecat/`)
 **Technologies**: FastAPI + OpenAI + ElevenLabs + Pipecat + WebSocket Streaming
 
 - **Purpose**: Ultra-low latency professional implementation
@@ -78,7 +111,7 @@ This repository contains **5 different implementations** of speech-to-speech AI 
 - Settings: stability=0.4, similarity_boost=0.75
 ```
 
-### 4. OpenAI + ElevenLabs + Pipecat + Streaming (`openai + elevenlabs + pipecat + streaming/`)
+### 5. OpenAI + ElevenLabs + Pipecat + Streaming (`openai + elevenlabs + pipecat + streaming/`)
 **Technologies**: FastAPI + OpenAI + ElevenLabs + Pipecat + Full Streaming Architecture
 
 - **Purpose**: Maximum performance with modular architecture
@@ -91,7 +124,7 @@ This repository contains **5 different implementations** of speech-to-speech AI 
   - Production-ready scaling
 - **Use Case**: Enterprise applications, high-performance requirements
 
-### 5. OpenAI + Pipecat + Streaming (`openai + pipecat + streaming/`)
+### 6. OpenAI + Pipecat + Streaming (`openai + pipecat + streaming/`)
 **Technologies**: FastAPI + OpenAI + Pipecat + gTTS + Streaming Architecture
 
 - **Purpose**: Cost-effective streaming solution
@@ -118,16 +151,22 @@ python --version  # Should be 3.8 or higher
 Create a `.env` file in each implementation folder:
 
 ```bash
-# Required for all implementations
+# Required for Groq implementation (RECOMMENDED)
+GROQ_API_KEY=your_groq_api_key_here
+
+# Required for OpenAI implementations
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Required for ElevenLabs implementations
 ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 
-# Optional configuration
-AI_MODEL=gpt-3.5-turbo
-MAX_TOKENS=150
+# Optional configuration for Groq
+GROQ_MODEL=llama-3.3-70b-versatile
+MAX_TOKENS=1024
 TEMPERATURE=0.7
+
+# Legacy OpenAI configuration
+AI_MODEL=gpt-3.5-turbo
 ```
 
 ## 📖 Implementation Guides
