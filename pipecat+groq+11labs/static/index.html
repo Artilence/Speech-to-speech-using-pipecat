@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipecat Voice Agent | Groq + Google TTS/STT</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-microphone-alt"></i> Pipecat Voice Agent</h1>
+                <div class="header-info">
+                    <span class="tech-badge">Pipecat</span>
+                    <span class="tech-badge">Groq AI</span>
+                    <span class="tech-badge">Google TTS/STT</span>
+                    <span class="tech-badge">Real-time</span>
+                </div>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Interface -->
+        <main class="main-interface">
+            <!-- Voice Controls -->
+            <div class="voice-controls">
+                <button id="micButton" class="mic-button" disabled>
+                    <i class="fas fa-microphone"></i>
+                    <span class="mic-text">Hold to Talk</span>
+                </button>
+                <div class="voice-status" id="voiceStatus">
+                    <div class="listening-indicator" id="listeningIndicator">
+                        <div class="wave"></div>
+                        <div class="wave"></div>
+                        <div class="wave"></div>
+                    </div>
+                    <p class="status-message" id="statusMessage">Ready to listen</p>
+                </div>
+            </div>
+
+            <!-- Chat with AI -->
+            <div class="text-input-section">
+                <h3><i class="fas fa-comments"></i> Chat with AI</h3>
+                <p style="color: #10b981; font-size: 0.9rem; margin: 0 0 1rem 0;">
+                    <strong>🎛️ PIPECAT POWERED:</strong> Advanced pipeline processing with Google TTS/STT!
+                </p>
+                <div class="text-input-container">
+                    <textarea id="chatTextInput" placeholder="Type your message to the AI..." rows="2"></textarea>
+                    <button id="sendChatButton" class="chat-send-button">
+                        <i class="fas fa-paper-plane"></i>
+                        Send Message
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message ai-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <p>Hi there! I'm your voice assistant powered by Pipecat, Groq AI, and Google Cloud services. Type a message or use the microphone for real-time voice conversations!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </main>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button id="settingsToggle" class="settings-toggle">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+            <div class="settings-content" id="settingsContent">
+                <div class="setting-item">
+                    <label for="autoPlay">Auto-play responses</label>
+                    <input type="checkbox" id="autoPlay" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="voiceVisualization">Voice visualization</label>
+                    <input type="checkbox" id="voiceVisualization" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="pushToTalk">Push-to-talk mode</label>
+                    <input type="checkbox" id="pushToTalk" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="enableVAD">Voice Activity Detection</label>
+                    <input type="checkbox" id="enableVAD" checked>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div class="modal" id="errorModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Error</h3>
+                    <button class="modal-close" id="modalClose">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage">An error occurred</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="errorOk">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript - Pipecat Voice Agent -->
+    <script type="text/javascript">
+class PipecatVoiceAgent {
+    constructor() {
+        this.websocket = null;
+        this.sessionId = this.generateSessionId();
+        this.isRecording = false;
+        this.isConnected = false;
+        this.isProcessing = false;
+        this.audioContext = null;
+        this.mediaRecorder = null;
+        this.audioChunks = [];
+        this.currentAudio = null;
+        this.sessionStartTime = Date.now();
+        this.totalInteractions = 0;
+        
+        // Response timing
+        this.responseStartTime = null;
+
+        // DOM elements
+        this.elements = {
+            micButton: document.getElementById('micButton'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            statusMessage: document.getElementById('statusMessage'),
+            listeningIndicator: document.getElementById('listeningIndicator'),
+            chatMessages: document.getElementById('chatMessages'),
+            settingsToggle: document.getElementById('settingsToggle'),
+            settingsContent: document.getElementById('settingsContent'),
+            errorModal: document.getElementById('errorModal'),
+            modalClose: document.getElementById('modalClose'),
+            errorOk: document.getElementById('errorOk'),
+            errorMessage: document.getElementById('errorMessage'),
+            chatTextInput: document.getElementById('chatTextInput'),
+            sendChatButton: document.getElementById('sendChatButton')
+        };
+
+        // Settings
+        this.settings = {
+            autoPlay: document.getElementById('autoPlay').checked,
+            voiceVisualization: document.getElementById('voiceVisualization').checked,
+            pushToTalk: document.getElementById('pushToTalk').checked,
+            enableVAD: document.getElementById('enableVAD').checked
+        };
+
+        this.init();
+    }
+
+    generateSessionId() {
+        return 'pipecat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    async init() {
+        try {
+            console.log('🚀 Initializing Pipecat Voice Agent...');
+            
+            // Initialize audio context
+            await this.initAudioContext();
+            
+            // Setup event listeners
+            this.setupEventListeners();
+            
+            // Connect to WebSocket
+            await this.connectWebSocket();
+            
+            console.log('✅ Pipecat Voice Agent initialized successfully');
+            
+        } catch (error) {
+            console.error('❌ Failed to initialize Pipecat Voice Agent:', error);
+            this.showError('Failed to initialize voice agent: ' + error.message);
+        }
+    }
+
+    async initAudioContext() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('🔊 Audio context initialized for Pipecat, state:', this.audioContext.state);
+            
+            // Resume context on user interaction
+            document.addEventListener('click', () => {
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    this.audioContext.resume().then(() => {
+                        console.log('🔊 Audio context resumed after user interaction');
+                    });
+                }
+            }, { once: true });
+            
+        } catch (error) {
+            console.error('❌ Audio context initialization failed:', error);
+        }
+    }
+
+    setupEventListeners() {
+        // Microphone button
+        this.elements.micButton.addEventListener('mousedown', () => {
+            if (this.settings.pushToTalk && this.isConnected && !this.isProcessing) {
+                this.startRecording();
+            }
+        });
+
+        this.elements.micButton.addEventListener('mouseup', () => {
+            if (this.settings.pushToTalk && this.isRecording) {
+                this.stopRecording();
+            }
+        });
+
+        this.elements.micButton.addEventListener('mouseleave', () => {
+            if (this.settings.pushToTalk && this.isRecording) {
+                this.stopRecording();
+            }
+        });
+
+        // Touch events for mobile
+        this.elements.micButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (this.settings.pushToTalk && this.isConnected && !this.isProcessing) {
+                this.startRecording();
+            }
+        });
+
+        this.elements.micButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (this.settings.pushToTalk && this.isRecording) {
+                this.stopRecording();
+            }
+        });
+
+        // Settings toggle
+        this.elements.settingsToggle.addEventListener('click', () => {
+            this.elements.settingsContent.classList.toggle('show');
+        });
+
+        // Settings changes
+        document.getElementById('autoPlay').addEventListener('change', (e) => {
+            this.settings.autoPlay = e.target.checked;
+        });
+
+        document.getElementById('voiceVisualization').addEventListener('change', (e) => {
+            this.settings.voiceVisualization = e.target.checked;
+        });
+
+        document.getElementById('pushToTalk').addEventListener('change', (e) => {
+            this.settings.pushToTalk = e.target.checked;
+        });
+
+        document.getElementById('enableVAD').addEventListener('change', (e) => {
+            this.settings.enableVAD = e.target.checked;
+        });
+
+        // Modal close
+        this.elements.modalClose.addEventListener('click', () => this.hideError());
+        this.elements.errorOk.addEventListener('click', () => this.hideError());
+
+        // Chat send button
+        this.elements.sendChatButton.addEventListener('click', () => {
+            this.sendChatMessage();
+        });
+
+        // Enter key in chat text input
+        this.elements.chatTextInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendChatMessage();
+            }
+        });
+
+        // Audio player controls
+        
+
+        console.log('📱 Event listeners setup complete for Pipecat');
+    }
+
+    async connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/${this.sessionId}`;
+        
+        console.log('🔗 Connecting to Pipecat WebSocket:', wsUrl);
+        
+        try {
+            this.websocket = new WebSocket(wsUrl);
+            
+            this.websocket.onopen = () => {
+                console.log('✅ Pipecat WebSocket connected');
+                this.isConnected = true;
+                this.updateConnectionStatus('connected', 'Connected');
+                this.elements.micButton.disabled = false;
+                this.startLatencyMonitoring();
+            };
+
+            this.websocket.onmessage = (event) => {
+                this.handleWebSocketMessage(JSON.parse(event.data));
+            };
+
+            this.websocket.onclose = (event) => {
+                console.log('🔌 Pipecat WebSocket disconnected:', event.code, event.reason);
+                this.isConnected = false;
+                this.updateConnectionStatus('disconnected', 'Disconnected');
+                this.elements.micButton.disabled = true;
+                
+                // Auto-reconnect after 3 seconds
+                setTimeout(() => this.connectWebSocket(), 3000);
+            };
+
+            this.websocket.onerror = (error) => {
+                console.error('❌ Pipecat WebSocket error:', error);
+                this.updateConnectionStatus('error', 'Connection Error');
+            };
+
+        } catch (error) {
+            console.error('❌ Pipecat WebSocket connection failed:', error);
+            this.showError('Failed to connect to server: ' + error.message);
+        }
+    }
+
+    handleWebSocketMessage(message) {
+        console.log('📨 Received Pipecat message:', message.type);
+
+        switch (message.type) {
+            case 'connected':
+                this.handleConnectedMessage(message);
+                break;
+            case 'processing':
+                this.handleProcessingMessage(message);
+                break;
+            case 'ai_response':
+                this.handleAIResponse(message);
+                break;
+            case 'audio_response':
+                this.handleAudioResponse(message);
+                break;
+            case 'audio_chunk':
+                this.handleAudioChunk(message);
+                break;
+            case 'transcription':
+                this.handleTranscription(message);
+                break;
+            case 'recording_started':
+                this.handleRecordingStarted(message);
+                break;
+            case 'recording_stopped':
+                this.handleRecordingStopped(message);
+                break;
+            case 'error':
+                this.handleErrorMessage(message);
+                break;
+            case 'pong':
+                this.handlePongMessage(message);
+                break;
+            case 'stats':
+                this.handleStatsMessage(message);
+                break;
+            default:
+                console.warn('❓ Unknown message type:', message.type);
+        }
+    }
+
+    handleConnectedMessage(message) {
+        console.log('🎯 Pipecat session connected:', message.session_id);
+        this.updateStatus('Ready to listen');
+    }
+
+    handleProcessingMessage(message) {
+        console.log('⏳ Pipecat processing request...');
+        this.isProcessing = true;
+        this.updateStatus('Processing your request...');
+        this.updateUI();
+    }
+
+    handleAIResponse(message) {
+        console.log('🤖 Pipecat AI response received:', message.text.substring(0, 50) + '...');
+        
+        // Add message to chat
+        this.addMessageToChat(message.text, 'ai');
+        
+        // Play audio - use ElevenLabs if available, otherwise browser TTS
+        if (message.audio_data) {
+            console.log('🔊 Playing ElevenLabs TTS audio');
+            this.playElevenLabsAudio(message.audio_data);
+        } else {
+            console.log('🔊 Using browser TTS fallback');
+            this.speakText(message.text);
+        }
+        
+        this.totalInteractions++;
+        
+        // Reset processing state
+        this.isProcessing = false;
+        this.updateUI();
+        this.updateStatus('Ready to listen');
+    }
+
+
+
+    handleTranscription(message) {
+        console.log('📝 Pipecat transcription:', message.text);
+        
+        if (message.is_final) {
+            this.addMessageToChat(message.text, 'user');
+        }
+    }
+
+    handleRecordingStarted(message) {
+        console.log('🎤 Pipecat recording started');
+        this.updateStatus('Recording...');
+    }
+
+    handleRecordingStopped(message) {
+        console.log('🛑 Pipecat recording stopped');
+        this.updateStatus('Processing...');
+    }
+
+    handleErrorMessage(message) {
+        console.error('❌ Pipecat server error:', message.message);
+        this.showError(message.message);
+        this.isProcessing = false;
+        this.updateStatus('Error occurred');
+        this.updateUI();
+    }
+
+    handlePongMessage(message) {
+        console.log('🏓 Pipecat pong received');
+    }
+
+    handleStatsMessage(message) {
+        console.log('📊 Pipecat stats received:', message);
+    }
+
+    async startRecording() {
+        if (!this.isConnected || this.isProcessing || this.isRecording) {
+            return;
+        }
+
+        try {
+            // Initialize Web Speech API
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                throw new Error('Speech recognition not supported in this browser');
+            }
+            
+            this.recognition = new SpeechRecognition();
+            this.recognition.continuous = false;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
+            
+            this.recognition.onstart = () => {
+                console.log('🎤 Speech recognition started');
+                this.isRecording = true;
+                this.updateUI();
+                this.updateStatus('Listening...');
+                
+                // Notify server
+                this.websocket.send(JSON.stringify({
+                    type: 'start_recording',
+                    timestamp: Date.now()
+                }));
+            };
+            
+            this.recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                if (finalTranscript.trim()) {
+                    console.log('🎤 Final transcript:', finalTranscript);
+                    this.sendSpeechToServer(finalTranscript.trim());
+                }
+            };
+            
+            this.recognition.onerror = (event) => {
+                console.error('❌ Speech recognition error:', event.error);
+                this.updateStatus('Speech recognition error: ' + event.error);
+                this.isRecording = false;
+                this.updateUI();
+            };
+            
+            this.recognition.onend = () => {
+                console.log('🛑 Speech recognition ended');
+                this.isRecording = false;
+                this.updateUI();
+                this.updateStatus('Ready to listen');
+            };
+            
+            this.recognition.start();
+            
+        } catch (error) {
+            console.error('❌ Failed to start speech recognition:', error);
+            this.updateStatus('Failed to start speech recognition: ' + error.message);
+        }
+    }
+
+    stopRecording() {
+        if (!this.isRecording || !this.recognition) {
+            return;
+        }
+
+        try {
+            this.recognition.stop();
+            this.isRecording = false;
+            this.updateUI();
+            
+            // Notify server
+            this.websocket.send(JSON.stringify({
+                type: 'stop_recording',
+                timestamp: Date.now()
+            }));
+            
+        } catch (error) {
+            console.error('❌ Failed to stop speech recognition:', error);
+        }
+    }
+
+    sendSpeechToServer(transcript) {
+        try {
+            this.isProcessing = true;
+            this.updateStatus('Processing your speech...');
+            this.updateUI();
+
+            this.responseStartTime = performance.now();
+
+            // Send speech as text to server
+            const message = {
+                type: 'user_speech',
+                content: transcript,
+                timestamp: Date.now()
+            };
+            
+            this.websocket.send(JSON.stringify(message));
+
+            // Add user message to chat
+            this.addMessageToChat(transcript, 'user');
+            
+        } catch (error) {
+            console.error('❌ Failed to send speech to server:', error);
+            this.updateStatus('Failed to send speech: ' + error.message);
+            this.isProcessing = false;
+            this.updateUI();
+        }
+    }
+
+    async sendChatMessage() {
+        const text = this.elements.chatTextInput.value.trim();
+        
+        if (!text) {
+            this.updateStatus('Please enter a message');
+            return;
+        }
+
+        if (!this.isConnected) {
+            this.updateStatus('Not connected to server');
+            return;
+        }
+
+        try {
+            this.isProcessing = true;
+            this.updateStatus('Sending message to AI...');
+            this.updateUI();
+
+            this.responseStartTime = performance.now();
+
+            // Send chat message
+            const message = {
+                type: 'user_speech',
+                content: text,
+                timestamp: Date.now()
+            };
+            
+            this.websocket.send(JSON.stringify(message));
+
+            // Add user message to chat
+            this.addMessageToChat(text, 'user');
+            
+            // Clear input
+            this.elements.chatTextInput.value = '';
+            
+        } catch (error) {
+            console.error('❌ Failed to send chat message:', error);
+            this.updateStatus('Failed to send message: ' + error.message);
+            this.isProcessing = false;
+            this.updateUI();
+        }
+    }
+
+    speakText(text) {
+        try {
+            // Use Web Speech API for text-to-speech (fallback)
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = this.settings.speechRate || 1.0;
+                utterance.pitch = this.settings.speechPitch || 1.0;
+                utterance.volume = this.settings.speechVolume || 1.0;
+                
+                utterance.onstart = () => {
+                    console.log('🔊 Browser TTS started speaking');
+                    if (this.responseStartTime) {
+                        const responseTime = performance.now() - this.responseStartTime;
+                        console.log(`📊 🎯 RESPONSE TIME: ${Math.round(responseTime)}ms (Message → AI Speaking)`);
+                        this.responseStartTime = null;
+                    }
+                };
+                
+                utterance.onend = () => {
+                    console.log('🔊 Browser TTS finished speaking');
+                };
+                
+                utterance.onerror = (event) => {
+                    console.error('❌ Browser TTS error:', event.error);
+                };
+                
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn('⚠️ Text-to-speech not supported in this browser');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to speak text:', error);
+        }
+    }
+
+    playElevenLabsAudio(audioBase64) {
+        try {
+            // Convert base64 to audio blob
+            const audioBytes = atob(audioBase64);
+            const audioArray = new Uint8Array(audioBytes.length);
+            for (let i = 0; i < audioBytes.length; i++) {
+                audioArray[i] = audioBytes.charCodeAt(i);
+            }
+            
+            const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            
+            // Create and play audio element
+            const audio = new Audio(audioUrl);
+            
+            audio.onloadstart = () => {
+                console.log('🔊 ElevenLabs audio loading...');
+            };
+            
+            audio.onplay = () => {
+                console.log('🔊 ElevenLabs TTS started speaking');
+                if (this.responseStartTime) {
+                    const responseTime = performance.now() - this.responseStartTime;
+                    console.log(`📊 🎯 RESPONSE TIME: ${Math.round(responseTime)}ms (Message → AI Speaking)`);
+                    this.responseStartTime = null;
+                }
+            };
+            
+            audio.onended = () => {
+                console.log('🔊 ElevenLabs TTS finished speaking');
+                URL.revokeObjectURL(audioUrl); // Clean up
+            };
+            
+            audio.onerror = (event) => {
+                console.error('❌ ElevenLabs audio playback error:', event);
+                URL.revokeObjectURL(audioUrl); // Clean up
+            };
+            
+            audio.play().catch(error => {
+                console.error('❌ Failed to play ElevenLabs audio:', error);
+                URL.revokeObjectURL(audioUrl); // Clean up
+            });
+            
+        } catch (error) {
+            console.error('❌ Failed to process ElevenLabs audio:', error);
+        }
+    }
+
+
+
+    addMessageToChat(content, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.innerHTML = `<p>${content}</p>`;
+        
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(contentDiv);
+        
+        this.elements.chatMessages.appendChild(messageDiv);
+        this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+    }
+
+    updateUI() {
+        // Update microphone button
+        if (this.isRecording) {
+            this.elements.micButton.classList.add('active');
+            this.elements.listeningIndicator.classList.add('active');
+        } else {
+            this.elements.micButton.classList.remove('active');
+            this.elements.listeningIndicator.classList.remove('active');
+        }
+        
+        // Update microphone button state
+        this.elements.micButton.disabled = !this.isConnected || this.isProcessing;
+        
+        // Update microphone button text
+        if (this.isProcessing) {
+            this.elements.micButton.querySelector('.mic-text').textContent = 'Processing...';
+        } else if (this.isRecording) {
+            this.elements.micButton.querySelector('.mic-text').textContent = 'Listening...';
+        } else {
+            this.elements.micButton.querySelector('.mic-text').textContent = 'Hold to Talk';
+        }
+        
+        // Update chat button state
+        if (this.elements.sendChatButton) {
+            if (!this.isConnected) {
+                this.elements.sendChatButton.disabled = true;
+                this.elements.sendChatButton.innerHTML = '<i class="fas fa-paper-plane"></i> Not Connected';
+            } else if (this.isProcessing) {
+                this.elements.sendChatButton.disabled = true;
+                this.elements.sendChatButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            } else {
+                this.elements.sendChatButton.disabled = false;
+                this.elements.sendChatButton.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+            }
+        }
+    }
+
+    updateStatus(message) {
+        this.elements.statusMessage.textContent = message;
+    }
+
+    updateConnectionStatus(status, text) {
+        const statusDot = this.elements.connectionStatus.querySelector('.status-dot');
+        const statusText = this.elements.connectionStatus.querySelector('.status-text');
+        
+        statusDot.className = `status-dot ${status}`;
+        statusText.textContent = text;
+    }
+
+    startLatencyMonitoring() {
+        // Send ping every 30 seconds to monitor latency
+        setInterval(() => {
+            if (this.isConnected) {
+                this.websocket.send(JSON.stringify({
+                    type: 'ping',
+                    timestamp: Date.now()
+                }));
+            }
+        }, 30000);
+    }
+
+    showError(message) {
+        this.elements.errorMessage.textContent = message;
+        this.elements.errorModal.classList.add('show');
+    }
+
+    hideError() {
+        this.elements.errorModal.classList.remove('show');
+    }
+}
+
+// Initialize the Pipecat voice agent when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎬 DOM loaded, initializing Pipecat Voice Agent...');
+    console.log('🎛️ PIPECAT POWERED: Advanced pipeline processing!');
+    console.log('🗣️ Google TTS: High-quality text-to-speech');
+    console.log('🎤 Google STT: Accurate speech-to-text');
+    console.log('📊 Performance monitoring enabled!');
+    new PipecatVoiceAgent();
+});
+    </script>
+</body>
+</html>

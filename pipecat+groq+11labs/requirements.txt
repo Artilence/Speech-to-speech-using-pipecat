@@ -1,0 +1,36 @@
+# Pipecat framework
+pipecat-ai==0.0.67
+
+# Core web framework for API
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# WebSocket support
+websockets==12.0
+
+# Groq AI client  
+groq==0.4.1
+
+# Environment variables
+python-dotenv==1.0.0
+
+# ElevenLabs TTS
+elevenlabs==2.8.1
+
+# Audio processing (minimal)
+pydub==0.25.1
+numpy==1.24.3
+
+# HTTP client for API calls
+aiohttp==3.9.1
+httpx==0.25.2
+
+# Async utilities
+asyncio==3.4.3
+
+# Development and debugging
+structlog==23.2.0
+colorama==0.4.6
+
+# Production utilities
+python-multipart==0.0.6
