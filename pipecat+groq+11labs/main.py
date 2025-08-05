@@ -158,6 +158,8 @@ async def handle_voice_session(websocket: WebSocket, session_id: str):
                 await handle_ping(websocket, session_id)
             elif message_type == "get_stats":
                 await handle_stats_request(websocket, session_id)
+            elif message_type == "user_interruption":
+                await handle_user_interruption(websocket, session_id, message)
             else:
                 logger.warning(f"Unknown message type: {message_type}")
                 
@@ -297,6 +299,28 @@ async def handle_stats_request(websocket: WebSocket, session_id: str):
         "total_interactions": session.get("total_interactions", 0),
         "latency_stats": stats
     })
+
+
+async def handle_user_interruption(websocket: WebSocket, session_id: str, message: dict):
+    """Handle user interruption of AI speech"""
+    try:
+        logger.info(f"🛑 User interruption detected for session: {session_id}")
+        
+        # Signal to voice service to stop any ongoing processing
+        await voice_pipeline_service.handle_interruption(session_id)
+        
+        # Acknowledge the interruption
+        await websocket_manager.send_to_session(session_id, {
+            "type": "interruption_acknowledged",
+            "message": "AI speech interrupted",
+            "timestamp": time.time()
+        })
+        
+        # Log the interruption event
+        latency_logger.log_latency(session_id, "user_interruption", 0)
+        
+    except Exception as e:
+        logger.error(f"❌ Error handling interruption for {session_id}: {e}")
 
 
 async def cleanup_session(session_id: str):

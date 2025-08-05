@@ -214,6 +214,25 @@ You are designed for real-time voice conversations using advanced pipeline proce
         except Exception as e:
             logger.error(f"❌ Error stopping recording: {e}")
     
+    async def handle_interruption(self, session_id: str):
+        """Handle user interruption of AI processing"""
+        try:
+            if session_id in self.session_contexts:
+                context = self.session_contexts[session_id]
+                
+                # Mark session as interrupted
+                context["interrupted"] = True
+                context["interrupted_at"] = time.time()
+                
+                logger.info(f"🛑 Session {session_id} marked as interrupted")
+                
+                # Note: Since we're using browser TTS and direct API calls,
+                # the actual audio stopping is handled on the frontend.
+                # This method serves as a record of the interruption event.
+                
+        except Exception as e:
+            logger.error(f"❌ Error handling interruption for session {session_id}: {e}")
+
     async def cleanup_session(self, session_id: str):
         """Clean up session-specific resources"""
         try:

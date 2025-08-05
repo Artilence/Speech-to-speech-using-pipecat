@@ -98,7 +98,7 @@
                     <input type="checkbox" id="pushToTalk" checked>
                 </div>
                 <div class="setting-item">
-                    <label for="enableVAD">Voice Activity Detection</label>
+                    <label for="enableVAD">Interruption Detection (VAD)</label>
                     <input type="checkbox" id="enableVAD" checked>
                 </div>
             </div>
@@ -141,6 +141,13 @@ class PipecatVoiceAgent {
         
         // Response timing
         this.responseStartTime = null;
+        
+        // Interruption handling
+        this.isAISpeaking = false;
+        this.currentTTSUtterance = null;
+        this.currentAudioElement = null;
+        this.vadRecognition = null;
+        this.vadTimeout = null;
 
         // DOM elements
         this.elements = {
@@ -373,6 +380,9 @@ class PipecatVoiceAgent {
             case 'stats':
                 this.handleStatsMessage(message);
                 break;
+            case 'interruption_acknowledged':
+                this.handleInterruptionAcknowledged(message);
+                break;
             default:
                 console.warn('❓ Unknown message type:', message.type);
         }
@@ -449,9 +459,19 @@ class PipecatVoiceAgent {
         console.log('📊 Pipecat stats received:', message);
     }
 
+    handleInterruptionAcknowledged(message) {
+        console.log('✅ Interruption acknowledged by server');
+    }
+
     async startRecording() {
         if (!this.isConnected || this.isProcessing || this.isRecording) {
             return;
+        }
+
+        // Immediately stop any AI speech when user starts recording
+        if (this.isAISpeaking) {
+            console.log('🛑 User started speaking - interrupting AI');
+            this.stopCurrentAudio();
         }
 
         try {
@@ -615,6 +635,9 @@ class PipecatVoiceAgent {
 
     speakText(text) {
         try {
+            // Stop any current speech first
+            this.stopCurrentAudio();
+            
             // Use Web Speech API for text-to-speech (fallback)
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -622,8 +645,14 @@ class PipecatVoiceAgent {
                 utterance.pitch = this.settings.speechPitch || 1.0;
                 utterance.volume = this.settings.speechVolume || 1.0;
                 
+                // Store reference for interruption
+                this.currentTTSUtterance = utterance;
+                
                 utterance.onstart = () => {
                     console.log('🔊 Browser TTS started speaking');
+                    this.isAISpeaking = true;
+                    this.startVoiceActivityDetection(); // Start listening for interruptions
+                    
                     if (this.responseStartTime) {
                         const responseTime = performance.now() - this.responseStartTime;
                         console.log(`📊 🎯 RESPONSE TIME: ${Math.round(responseTime)}ms (Message → AI Speaking)`);
@@ -633,10 +662,16 @@ class PipecatVoiceAgent {
                 
                 utterance.onend = () => {
                     console.log('🔊 Browser TTS finished speaking');
+                    this.isAISpeaking = false;
+                    this.currentTTSUtterance = null;
+                    this.stopVoiceActivityDetection();
                 };
                 
                 utterance.onerror = (event) => {
                     console.error('❌ Browser TTS error:', event.error);
+                    this.isAISpeaking = false;
+                    this.currentTTSUtterance = null;
+                    this.stopVoiceActivityDetection();
                 };
                 
                 window.speechSynthesis.speak(utterance);
@@ -651,6 +686,9 @@ class PipecatVoiceAgent {
 
     playElevenLabsAudio(audioBase64) {
         try {
+            // Stop any current speech first
+            this.stopCurrentAudio();
+            
             // Convert base64 to audio blob
             const audioBytes = atob(audioBase64);
             const audioArray = new Uint8Array(audioBytes.length);
@@ -664,12 +702,18 @@ class PipecatVoiceAgent {
             // Create and play audio element
             const audio = new Audio(audioUrl);
             
+            // Store reference for interruption
+            this.currentAudioElement = audio;
+            
             audio.onloadstart = () => {
                 console.log('🔊 ElevenLabs audio loading...');
             };
             
             audio.onplay = () => {
                 console.log('🔊 ElevenLabs TTS started speaking');
+                this.isAISpeaking = true;
+                this.startVoiceActivityDetection(); // Start listening for interruptions
+                
                 if (this.responseStartTime) {
                     const responseTime = performance.now() - this.responseStartTime;
                     console.log(`📊 🎯 RESPONSE TIME: ${Math.round(responseTime)}ms (Message → AI Speaking)`);
@@ -679,16 +723,25 @@ class PipecatVoiceAgent {
             
             audio.onended = () => {
                 console.log('🔊 ElevenLabs TTS finished speaking');
+                this.isAISpeaking = false;
+                this.currentAudioElement = null;
+                this.stopVoiceActivityDetection();
                 URL.revokeObjectURL(audioUrl); // Clean up
             };
             
             audio.onerror = (event) => {
                 console.error('❌ ElevenLabs audio playback error:', event);
+                this.isAISpeaking = false;
+                this.currentAudioElement = null;
+                this.stopVoiceActivityDetection();
                 URL.revokeObjectURL(audioUrl); // Clean up
             };
             
             audio.play().catch(error => {
                 console.error('❌ Failed to play ElevenLabs audio:', error);
+                this.isAISpeaking = false;
+                this.currentAudioElement = null;
+                this.stopVoiceActivityDetection();
                 URL.revokeObjectURL(audioUrl); // Clean up
             });
             
@@ -697,7 +750,133 @@ class PipecatVoiceAgent {
         }
     }
 
+    stopCurrentAudio() {
+        try {
+            // Stop browser TTS
+            if (this.currentTTSUtterance) {
+                console.log('🛑 Interrupting browser TTS');
+                window.speechSynthesis.cancel();
+                this.currentTTSUtterance = null;
+            }
+            
+            // Stop ElevenLabs audio
+            if (this.currentAudioElement) {
+                console.log('🛑 Interrupting ElevenLabs audio');
+                this.currentAudioElement.pause();
+                this.currentAudioElement.currentTime = 0;
+                this.currentAudioElement = null;
+            }
+            
+            // Update state
+            if (this.isAISpeaking) {
+                this.isAISpeaking = false;
+                this.stopVoiceActivityDetection();
+                
+                // Notify server about interruption
+                this.sendInterruptionSignal();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error stopping audio:', error);
+        }
+    }
 
+    startVoiceActivityDetection() {
+        // Only start VAD if AI is speaking and setting is enabled
+        if (!this.settings.enableVAD || !this.isAISpeaking) {
+            return;
+        }
+        
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                console.warn('⚠️ Speech recognition not supported for VAD');
+                return;
+            }
+            
+            this.vadRecognition = new SpeechRecognition();
+            this.vadRecognition.continuous = true;
+            this.vadRecognition.interimResults = true;
+            this.vadRecognition.lang = 'en-US';
+            
+            this.vadRecognition.onstart = () => {
+                console.log('👂 Voice Activity Detection started');
+            };
+            
+            this.vadRecognition.onresult = (event) => {
+                // If user starts speaking while AI is talking, interrupt
+                if (this.isAISpeaking && event.results.length > 0) {
+                    const lastResult = event.results[event.results.length - 1];
+                    if (lastResult[0].transcript.trim().length > 0) {
+                        console.log('🗣️ User interruption detected:', lastResult[0].transcript);
+                        this.handleUserInterruption();
+                    }
+                }
+            };
+            
+            this.vadRecognition.onerror = (event) => {
+                console.warn('⚠️ VAD error:', event.error);
+            };
+            
+            this.vadRecognition.onend = () => {
+                console.log('👂 Voice Activity Detection ended');
+            };
+            
+            this.vadRecognition.start();
+            
+        } catch (error) {
+            console.error('❌ Failed to start VAD:', error);
+        }
+    }
+
+    stopVoiceActivityDetection() {
+        try {
+            if (this.vadRecognition) {
+                this.vadRecognition.stop();
+                this.vadRecognition = null;
+            }
+            
+            if (this.vadTimeout) {
+                clearTimeout(this.vadTimeout);
+                this.vadTimeout = null;
+            }
+            
+        } catch (error) {
+            console.error('❌ Error stopping VAD:', error);
+        }
+    }
+
+    handleUserInterruption() {
+        console.log('🛑 Handling user interruption');
+        
+        // Stop current audio immediately
+        this.stopCurrentAudio();
+        
+        // Update UI
+        this.updateStatus('Ready to listen');
+        this.updateUI();
+        
+        // Small delay before allowing new recording to avoid picking up the interruption
+        this.vadTimeout = setTimeout(() => {
+            console.log('✅ Ready for new input after interruption');
+        }, 500);
+    }
+
+    sendInterruptionSignal() {
+        try {
+            if (this.websocket && this.isConnected) {
+                this.websocket.send(JSON.stringify({
+                    type: 'user_interruption',
+                    timestamp: Date.now(),
+                    session_id: this.sessionId
+                }));
+                console.log('📡 Interruption signal sent to server');
+            }
+        } catch (error) {
+            console.error('❌ Failed to send interruption signal:', error);
+        }
+    }
 
     addMessageToChat(content, sender) {
         const messageDiv = document.createElement('div');
